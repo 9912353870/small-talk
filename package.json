@@ -1,0 +1,22 @@
+{
+  "name": "small-talk",
+  "version": "1.0.0",
+  "description": "Streaming application (webRTC)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "small-talk",
+    "live",
+    "streaming"
+  ],
+  "author": "Bhanu Prakash Mallepoola",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.3",
+    "nodemon": "^3.1.0",
+    "socket.io": "^4.7.4"
+  }
+}
