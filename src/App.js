@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { socket } from "./services/socket";
 
-export default function App() {
+import { observer } from "mobx-react";
+import DashboardContainer from "./components/DashboardContainer";
+import CallContainer from "./components/CallContainer";
+import MessengerContainer from "./components/MessengerContainer";
+
+function App({ appStore }) {
   // const [isConnected, setIsConnected] = useState(socket.connected);
 
   // useEffect(() => {
@@ -24,5 +29,19 @@ export default function App() {
   //   };
   // }, []);
 
-  return <div>{`Hello user: ${socket.id}`}</div>;
+  return (
+    <div className="main_container">
+      {/* <div className="dashboard_container">
+        <DashboardContainer />
+      </div>
+      <div className="call_container">
+        <CallContainer />
+      </div>
+      <div className="messenger_container">
+        <MessengerContainer />
+      </div> */}
+    </div>
+  );
 }
+
+export default observer(App);
