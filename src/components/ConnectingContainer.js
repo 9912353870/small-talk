@@ -1,30 +1,49 @@
+import { observer } from "mobx-react";
 import React from "react";
+import { constants } from "../utils/constants";
 
-export default function ConnectingContainer({ type }) {
+function ConnectingContainer({ calle: type, appStore }) {
+  const onClickHandler = (callType) =>
+    appStore.getCalleDetails(`${type}_${callType}`);
   return (
-    <div class="personal_code_connecting_container">
-      <p class="personal_code_connecting_paragraph">
-        {type === "personal" ? "Personal Code" : "Stranger"}
+    <div className="personal_code_connecting_container">
+      <p className="personal_code_connecting_paragraph">
+        {type === constants.PERSONAL ? "Personal Code" : "Stranger"}
       </p>
-      {type === "personal" && (
-        <div class="personal_code_connecting_input_container">
-          <input class="personal_code_input" id="personal_code_input"></input>
+      {type === constants.PERSONAL && (
+        <div className="personal_code_connecting_input_container">
+          <input
+            className="personal_code_input"
+            id="personal_code_input"
+            value={appStore.getStoreData.calleSocketId}
+            onChange={(e) => appStore.setCalleSocketId(e.target.value)}
+          />
         </div>
       )}
-      <div class="personal_code_connecting_buttons_container">
-        <button class="connecting_button" id="personal_code_chat_button">
+      <div className="personal_code_connecting_buttons_container">
+        <button
+          className="connecting_button"
+          id="personal_code_chat_button"
+          onClick={() => onClickHandler(constants.CHAT)}
+        >
           <img
             src={require("../../assets/images/chatButton.png").default}
-            class="connecting_buttons_image"
+            className="connecting_buttons_image"
           ></img>
         </button>
-        <button class="connecting_button" id="personal_code_video_button">
+        <button
+          className="connecting_button"
+          id="personal_code_video_button"
+          onClick={() => onClickHandler(constants.VIDEO)}
+        >
           <img
             src={require("../../assets/images/videoButton.png").default}
-            class="connecting_buttons_image"
+            className="connecting_buttons_image"
           ></img>
         </button>
       </div>
     </div>
   );
 }
+
+export default observer(ConnectingContainer);

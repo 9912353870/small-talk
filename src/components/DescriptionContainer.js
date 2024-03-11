@@ -1,6 +1,7 @@
 import React from "react";
+import { observer } from "mobx-react";
 
-export default function () {
+function DescriptionContainer () {
   return (
     <div className="description_container">
       <p className="description_container_paragraph">
@@ -10,3 +11,5 @@ export default function () {
     </div>
   );
 }
+
+export default observer(DescriptionContainer);

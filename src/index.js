@@ -1,12 +1,11 @@
 import React from "react";
-import { createRoot } from 'react-dom/client';
+import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import TodoStore from "./store/main.store";
-const appStore = new TodoStore();
+import accessAppStore  from "./store/main.store";
 
 const container = document.getElementById("root");
 const root = createRoot(container);
 
 // Render the App component to the root
-root.render(<App appStore={appStore} />);
+root.render(<App appStore={accessAppStore} />);

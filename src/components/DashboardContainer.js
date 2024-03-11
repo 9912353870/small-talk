@@ -1,22 +1,26 @@
 import React from "react";
+import { observer } from "mobx-react";
 import LogoContainer from "./LogoContainer";
 import DescriptionContainer from "./DescriptionContainer";
 import PersonalCodeContainer from "./PersonalCodeContainer";
 import ConnectingContainer from "./ConnectingContainer";
 import AllowStrangersContainer from "./AllowStrangersContainer";
+import { constants } from "../utils/constants";
 
-export default function DashboardContainer() {
+function DashboardContainer({ appStore }) {
   return (
     <div>
-      <LogoContainer />
+      <LogoContainer appStore={appStore} />
       <div>
         <DescriptionContainer />
-        <PersonalCodeContainer />
-        {["personal", "stranger"].map((item) => (
-          <ConnectingContainer type={item} />
+        <PersonalCodeContainer appStore={appStore} />
+        {constants.CALLE_TYPES.map((item) => (
+          <ConnectingContainer calle={item} appStore={appStore} />
         ))}
-        <AllowStrangersContainer />
+        <AllowStrangersContainer appStore={appStore}/>
       </div>
     </div>
   );
 }
+
+export default observer(DashboardContainer);

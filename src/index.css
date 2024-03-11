@@ -68,14 +68,27 @@ body {
 
 .logo_container {
   margin-left: 40px;
-  width: 90px;
+  min-width: 90px;
+  max-width: 300px;
   height: 60px;
+  display: flex;
+  justify-content: space-between;
 }
 
 .logo_container img {
   width: auto;
   height: 60px;
 }
+.logo_container button {
+  background: #019c01e3;
+  width: 80px;
+  height: 30px;
+  border-radius: 5px;
+  margin: 10px;
+  color: #f8f8f8;
+  box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
 .description_container {
   margin: 0 40px;
 }
