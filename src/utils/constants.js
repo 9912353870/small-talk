@@ -8,4 +8,10 @@ export const constants = {
   CHAT: "CHAT",
   VIDEO: "VIDEO",
   CALLE_TYPES: ["PERSONAL", "STRANGER"],
+  OUTGOING_CALL: "Outgoing call",
+  INCOMING_CALL: "Incoming call",
+  ACCEPT: "accept",
+  REJECT: "reject",
+  UNAVAILABLE: "unavailable",
+  NOT_FOUND: "not found"
 };

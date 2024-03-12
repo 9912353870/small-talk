@@ -14,10 +14,9 @@ function DashboardContainer({ appStore }) {
       <div>
         <DescriptionContainer />
         <PersonalCodeContainer appStore={appStore} />
-        {constants.CALLE_TYPES.map((item) => (
-          <ConnectingContainer calle={item} appStore={appStore} />
-        ))}
-        <AllowStrangersContainer appStore={appStore}/>
+        <ConnectingContainer calle={constants.PERSONAL} appStore={appStore} />
+        <ConnectingContainer calle={constants.STRANGER} appStore={appStore} />
+        <AllowStrangersContainer appStore={appStore} />
       </div>
     </div>
   );

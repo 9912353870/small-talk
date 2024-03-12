@@ -5,6 +5,7 @@ import { observer } from "mobx-react";
 import DashboardContainer from "./components/DashboardContainer";
 import CallContainer from "./components/CallContainer";
 import MessengerContainer from "./components/MessengerContainer";
+import ModalPopup from "./components/CallerModal";
 
 function App({ appStore }) {
   return (
@@ -18,6 +19,7 @@ function App({ appStore }) {
       <div className="messenger_container">
         <MessengerContainer />
       </div>
+      <ModalPopup appStore={appStore} />
     </div>
   );
 }

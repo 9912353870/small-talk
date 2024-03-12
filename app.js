@@ -2,6 +2,7 @@ const express = require("express");
 
 const app = express();
 const cors = require("cors");
+const e = require("express");
 const server = require("http").createServer(app);
 const io = require("socket.io")(server, {
   cors: {
@@ -19,14 +20,48 @@ io.on("connect", (socket) => {
   connectedPeers.push(socket.id);
   console.log("Peers connected: ", connectedPeers);
 
-  socket.on("pre-offer", (data) => console.log("Pre-offer:", data));
+  socket.on("pre-offer", (data) => {
+    const { calleId, typeOfCall } = data;
+
+    const calleIdFromConnectedPeers = connectedPeers.find(
+      (peer) => peer === calleId
+    );
+
+    if (calleIdFromConnectedPeers) {
+      io.to(calleIdFromConnectedPeers).emit("pre-offer", {
+        callerId: socket.id,
+        typeOfCall,
+      });
+    } else {
+      io.to(socket.id).emit("pre-offer-answer", {
+        calleId,
+        status: "not found",
+      });
+    }
+  });
+
+  socket.on("pre-offer-answer", (data) => {
+    console.log("pre-offer-answer", data);
+    let returnStatus = "";
+    const { callerId, status } = data;
+    const callerIdFromConnectedPeers = connectedPeers.find(
+      (peer) => peer === callerId
+    );
+    if (callerIdFromConnectedPeers) {
+      returnStatus = status;
+      io.to(callerId).emit("pre-offer-answer", {
+        calleId: socket.id,
+        status: returnStatus,
+      });
+    }
+  });
 
   socket.on("disconnect", () => {
-    console.log("Peers disconnected: ", connectedPeers);
     const newConnectedPeers = connectedPeers.filter(
       (peerId) => peerId !== socket.id
     );
     connectedPeers = newConnectedPeers;
+    console.log("Peers disconnected: ", connectedPeers);
   });
 });
 
