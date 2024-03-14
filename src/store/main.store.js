@@ -45,6 +45,11 @@ export class AppStore {
     this.webRTCconfigurations
   );
 
+  @observable accessor dataChannel =
+    this.peerConnection.createDataChannel("chat");
+
+  @observable accessor messageStack = [];
+
   constructor() {
     makeObservable(this);
     this.setConnection = this.setConnection.bind(this);
@@ -73,6 +78,15 @@ export class AppStore {
   @computed
   get getCallInfo() {
     return this.callInfo;
+  }
+
+  @action pushMessageToSTack(message) {
+    this.messageStack = [...this.messageStack, message];
+  }
+
+  @action sendMessageUsingDataChannel(message) {
+    const stringifiedMessage = JSON.stringify(message);
+    this.dataChannel.send(stringifiedMessage);
   }
 
   @action handleMic() {
@@ -129,7 +143,7 @@ export class AppStore {
       this.screenSharingStream.getTracks().forEach((track) => track.stop());
 
       this.setScreenSharingActive(!this.screenSharingActive);
-      this.setLocalStream(localStream)
+      this.setLocalStream(localStream);
     }
 
     this.enableScreenSharing = !this.enableScreenSharing;
@@ -374,6 +388,28 @@ export class AppStore {
    */
 
   @action createRTCPeerConnection() {
+    this.peerConnection.ondatachannel = function (event) {
+      const dataChannel = event.channel;
+
+      dataChannel.onopen = () => {
+        console.log(
+          "peer connection is ready to receive data channel messages"
+        );
+      };
+
+      dataChannel.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        console.log("message came from data channel: ", message);
+        if (message) {
+          this.pushMessageToSTack({
+            message,
+            timestamp: Date.now(),
+            type: "recieved",
+          });
+        }
+      };
+    }.bind(this);
+
     this.peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
         /// send our ice candidates to othe peers
