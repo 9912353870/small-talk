@@ -47,12 +47,25 @@ io.on("connect", (socket) => {
     const callerIdFromConnectedPeers = connectedPeers.find(
       (peer) => peer === callerId
     );
+
     if (callerIdFromConnectedPeers) {
       returnStatus = status;
       io.to(callerId).emit("pre-offer-answer", {
         calleId: socket.id,
         status: returnStatus,
       });
+    }
+  });
+
+  socket.on("webRTC-signalling", (data) => {
+    const { peerSocketId } = data;
+
+    const peerIdFromConnectedPeers = connectedPeers.find(
+      (peer) => peer === peerSocketId
+    );
+
+    if (peerIdFromConnectedPeers) {
+      io.to(peerIdFromConnectedPeers).emit("webRTC-signalling",data);
     }
   });
 

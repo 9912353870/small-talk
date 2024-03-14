@@ -14,10 +14,10 @@ function App({ appStore }) {
         <DashboardContainer appStore={appStore} />
       </div>
       <div className="call_container">
-        <CallContainer />
+        <CallContainer appStore={appStore} />
       </div>
       <div className="messenger_container">
-        <MessengerContainer />
+        <MessengerContainer appStore={appStore} />
       </div>
       <ModalPopup appStore={appStore} />
     </div>

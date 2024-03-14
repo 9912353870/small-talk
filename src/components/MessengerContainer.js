@@ -1,10 +1,16 @@
+import { observer } from "mobx-react";
 import React from "react";
+import { constants } from "../utils/constants";
 
-export default function MessengerContainer() {
+function MessengerContainer({ appStore }) {
+  const show = appStore.getCallInfo.status === constants.ACCEPT;
   return (
     <>
       <div className="messages_container" id="messages_container"></div>
-      <div className="new_message_container display_none" id="new_message">
+      <div
+        className={`new_message_container ${show ? "" : "display_none"}`}
+        id="new_message"
+      >
         <input
           className="new_message_input"
           id="new_message_input"
@@ -21,3 +27,5 @@ export default function MessengerContainer() {
     </>
   );
 }
+
+export default observer(MessengerContainer);

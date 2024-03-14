@@ -1,57 +1,120 @@
-import React from "react";
+import { observer } from "mobx-react";
+import React, { useEffect, useRef, useState } from "react";
+import { constants } from "../utils/constants";
 
-export default function VideoContainer() {
+function VideoContainer({ appStore }) {
+  const show = appStore.getCallInfo.status === constants.ACCEPT;
+  const videoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+
+  useEffect(() => {
+    appStore.handleLocalStream();
+  }, []);
+
+  useEffect(() => {
+    if (appStore.getStoreData.localStream && "srcObject" in videoRef.current) {
+      videoRef.current.srcObject = appStore.getStoreData.enableScreenSharing
+        ? appStore.getStoreData.screenSharingStream
+        : appStore.getStoreData.localStream;
+    }
+  }, [
+    appStore.getStoreData.localStream,
+    appStore.getStoreData.screenSharingStream,
+    appStore.getStoreData.enableScreenSharing,
+  ]);
+
+  useEffect(() => {
+    if (
+      appStore.getStoreData.remoteStream &&
+      "srcObject" in remoteVideoRef.current
+    ) {
+      remoteVideoRef.current.srcObject = appStore.getStoreData.remoteStream;
+    }
+  }, [appStore.getStoreData.remoteStream]);
+
   return (
     <div className="videos_container">
-      <div id="video_placeholder" className="videos_placeholder">
-        <img src={require("../../assets/Images/logo.png").default} />
-      </div>
-      <video
-        className="remote_video display_none"
-        autoPlay
-        id="remote_video"
-      ></video>
+      {!show && (
+        <div id="video_placeholder" className={`videos_placeholder`}>
+          <img src={require("../../assets/Images/logo.png").default} />
+        </div>
+      )}
+      {show && (
+        <video
+          className={`remote_video`}
+          autoPlay
+          id="remote_video"
+          ref={remoteVideoRef}
+        ></video>
+      )}
       <div className="local_video_container">
-        <video className="local_video" id="local_video" muted autoPlay></video>
+        <video
+          className="local_video"
+          id="local_video"
+          muted
+          autoPlay
+          ref={videoRef}
+        ></video>
       </div>
-      <div className="call_buttons_container display_none" id="call_buttons">
-        <button className="call_button_small" id="mic_button">
-          <img
-            src={require("../../assets/Images/mic.png").default}
-            id="mic_button_image"
-          />
-        </button>
-        <button className="call_button_small" id="camera_button">
-          <img
-            src={require("../../assets/Images/camera.png").default}
-            id="camera_button_image"
-          />
-        </button>
-        <button className="call_button_large" id="hang_up_button">
-          <img src={require("../../assets/Images/hangUp.png").default} />
-        </button>
-        <button className="call_button_small" id="screen_sharing_button">
-          <img
-            src={
-              require("../../assets/Images/switchCameraScreenSharing.png")
-                .default
-            }
-          />
-        </button>
-        <button className="call_button_small" id="start_recording_button">
-          <img
-            src={require("../../assets/Images/recordingStart.png").default}
-          />
-        </button>
-      </div>
-      <div
-        className="finish_chat_button_container display_none"
-        id="finish_chat_button_container"
-      >
-        <button className="call_button_large" id="finish_chat_call_button">
-          <img src={require("../../assets/Images/hangUp.png").default} />
-        </button>
-      </div>
+      {show && (
+        <>
+          <div className={`call_buttons_container`} id="call_buttons">
+            <button
+              className="call_button_small"
+              id="mic_button"
+              onClick={() => appStore.handleMic()}
+            >
+              {appStore.getStoreData.enableMic ? (
+                <img src={require("../../assets/Images/mic.png").default} />
+              ) : (
+                <img src={require("../../assets/Images/micOff.png").default} />
+              )}
+            </button>
+            <button
+              className="call_button_small"
+              id="camera_button"
+              onClick={() => appStore.handleVideo()}
+            >
+              {appStore.getStoreData.enableVideo ? (
+                <img src={require("../../assets/Images/camera.png").default} />
+              ) : (
+                <img
+                  src={require("../../assets/Images/cameraOff.png").default}
+                />
+              )}
+            </button>
+            <button className="call_button_large" id="hang_up_button">
+              <img src={require("../../assets/Images/hangUp.png").default} />
+            </button>
+            <button
+              className="call_button_small"
+              id="screen_sharing_button"
+              onClick={() => appStore.handleScreenSharing()}
+            >
+              <img
+                src={
+                  require("../../assets/Images/switchCameraScreenSharing.png")
+                    .default
+                }
+              />
+            </button>
+            <button className="call_button_small" id="start_recording_button">
+              <img
+                src={require("../../assets/Images/recordingStart.png").default}
+              />
+            </button>
+          </div>
+          <div
+            className={`finish_chat_button_container`}
+            id="finish_chat_button_container"
+          >
+            <button className="call_button_large" id="finish_chat_call_button">
+              <img src={require("../../assets/Images/hangUp.png").default} />
+            </button>
+          </div>
+        </>
+      )}
+
       <div
         className="video_recording_buttons_container display_none"
         id="video_recording_buttons"
@@ -67,3 +130,5 @@ export default function VideoContainer() {
     </div>
   );
 }
+
+export default observer(VideoContainer);

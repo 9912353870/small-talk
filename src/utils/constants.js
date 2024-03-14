@@ -13,5 +13,8 @@ export const constants = {
   ACCEPT: "accept",
   REJECT: "reject",
   UNAVAILABLE: "unavailable",
-  NOT_FOUND: "not found"
+  NOT_FOUND: "not found",
+  OFFER: "OFFER",
+  ANSWER: "ANSWER",
+  ICE_CANDIDATES: "ICE_CANDIDATES",
 };
