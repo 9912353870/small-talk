@@ -3,16 +3,45 @@ import React, { useEffect, useRef, useState } from "react";
 import { constants } from "../utils/constants";
 
 function VideoContainer({ appStore }) {
-  const show = appStore.getCallInfo.status === constants.ACCEPT;
+  const show =
+    appStore.getCallInfo.status === constants.ACCEPT &&
+    appStore.getStoreData.typeOfCall === constants.PERSONAL_VIDEO;
   const videoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+
+  const [startRecord, setStartRecord] = useState(false);
+  const [pauseRecord, setPauseRecord] = useState(false);
+
+  const handleStartAndStopRecording = (status) => {
+    setStartRecord((prevState) => !prevState);
+    if (status) {
+      appStore.startRecording();
+      return;
+    }
+    appStore.stopRecording();
+  };
+
+  const handlePauseAndResumeRecording = (status) => {
+    setPauseRecord((prevState) => !prevState);
+
+    if (status) {
+      appStore.pauseRecording();
+      return;
+    }
+
+    appStore.resumeRecording();
+  };
 
   useEffect(() => {
     appStore.handleLocalStream();
   }, []);
 
   useEffect(() => {
-    if (appStore.getStoreData.localStream && "srcObject" in videoRef.current) {
+    if (
+      appStore.getStoreData.localStream &&
+      videoRef?.current &&
+      "srcObject" in videoRef.current
+    ) {
       videoRef.current.srcObject = appStore.getStoreData.enableScreenSharing
         ? appStore.getStoreData.screenSharingStream
         : appStore.getStoreData.localStream;
@@ -26,6 +55,7 @@ function VideoContainer({ appStore }) {
   useEffect(() => {
     if (
       appStore.getStoreData.remoteStream &&
+      remoteVideoRef.current &&
       "srcObject" in remoteVideoRef.current
     ) {
       remoteVideoRef.current.srcObject = appStore.getStoreData.remoteStream;
@@ -98,35 +128,52 @@ function VideoContainer({ appStore }) {
                 }
               />
             </button>
-            <button className="call_button_small" id="start_recording_button">
+            <button
+              className="call_button_small"
+              onClick={() => handleStartAndStopRecording(true)}
+            >
               <img
                 src={require("../../assets/Images/recordingStart.png").default}
               />
             </button>
           </div>
-          <div
-            className={`finish_chat_button_container`}
-            id="finish_chat_button_container"
-          >
-            <button className="call_button_large" id="finish_chat_call_button">
-              <img src={require("../../assets/Images/hangUp.png").default} />
-            </button>
-          </div>
         </>
       )}
 
-      <div
-        className="video_recording_buttons_container display_none"
-        id="video_recording_buttons"
-      >
-        <button id="pause_recording_button">
-          <img src={require("../../assets/Images/pause.png").default} />
-        </button>
-        <button id="resume_recording_button" className="display_none">
-          <img src={require("../../assets/Images/resume.png").default} />
-        </button>
-        <button id="stop_recording_button">Stop recording</button>
-      </div>
+      {appStore.getCallInfo.status === constants.ACCEPT && (
+        <div
+          className={`finish_chat_button_container`}
+          id="finish_chat_button_container"
+        >
+          <button className="call_button_large" id="finish_chat_call_button">
+            <img src={require("../../assets/Images/hangUp.png").default} />
+          </button>
+        </div>
+      )}
+      {startRecord && (
+        <div
+          className="video_recording_buttons_container"
+          id="video_recording_buttons"
+        >
+          {!pauseRecord && (
+            <button
+              id="pause_recording_button"
+              onClick={() => handlePauseAndResumeRecording(true)}
+            >
+              <img src={require("../../assets/Images/pause.png").default} />
+            </button>
+          )}
+          {pauseRecord && (
+            <button
+              id="resume_recording_button"
+              onClick={() => handlePauseAndResumeRecording(false)}
+            >
+              <img src={require("../../assets/Images/resume.png").default} />
+            </button>
+          )}
+          <button id="stop_recording_button" onClick={() => handleStartAndStopRecording(false)}>Stop recording</button>
+        </div>
+      )}
     </div>
   );
 }

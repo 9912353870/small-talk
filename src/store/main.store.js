@@ -50,6 +50,12 @@ export class AppStore {
 
   @observable accessor messageStack = [];
 
+  @observable accessor mediaRecorder = null;
+
+  @observable accessor vp9Codec = "video/webm; codecs=vp=9";
+  @observable accessor vp9Options = { mimeType: this.vp9Codec };
+  @observable accessor recordedChunks = [];
+
   constructor() {
     makeObservable(this);
     this.setConnection = this.setConnection.bind(this);
@@ -78,6 +84,47 @@ export class AppStore {
   @computed
   get getCallInfo() {
     return this.callInfo;
+  }
+
+  @action startRecording() {
+    const stream = this.remoteStream;
+
+    if (MediaRecorder.isTypeSupported(this.vp9Codec)) {
+      this.mediaRecorder = new MediaRecorder(stream, this.vp9Options);
+    } else {
+      this.mediaRecorder = new MediaRecorder(stream);
+    }
+
+    this.mediaRecorder.start();
+    this.mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        this.recordedChunks.push(event.data);
+        this.downloadRecording();
+      }
+    };
+  }
+  @action stopRecording() {
+    this.mediaRecorder.stop();
+  }
+  @action pauseRecording() {
+    this.mediaRecorder.pause();
+  }
+  @action resumeRecording() {
+    this.mediaRecorder.resume();
+  }
+  @action downloadRecording() {
+    const blob = new Blob(this.recordedChunks, {
+      type: "video/webm",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    document.body.appendChild(a);
+    a.style = "display: none;";
+    a.href = url;
+    a.download = "recording.webm";
+    a.click();
+    window.URL.revokeObjectURL(url);
   }
 
   @action pushMessageToSTack(message) {
@@ -155,15 +202,18 @@ export class AppStore {
       const stream = await navigator.mediaDevices.getUserMedia(
         this.constraints
       );
-      stream
-        .getTracks()
-        .forEach((track) => this.peerConnection.addTrack(track, stream));
-
       this.setLocalStream(stream);
     } catch (err) {
       console.log(err);
     }
   };
+
+  @action addPeers() {
+    const localStream = this.localStream;
+    localStream
+      .getTracks()
+      .forEach((track) => this.peerConnection.addTrack(track, localStream));
+  }
 
   @action
   acceptCallHandler() {
@@ -239,6 +289,9 @@ export class AppStore {
   sendPreOfferDetailsToServer(data) {
     console.log("pre-offer", data);
     socket.emit("pre-offer", data);
+    if (data.typeOfCall === constants.PERSONAL_VIDEO) {
+      this.addPeers();
+    }
     this.isCallerDialogOpen = true;
   }
 
@@ -252,6 +305,7 @@ export class AppStore {
     if (status === constants.ACCEPT) {
       this.createRTCPeerConnection();
       this.sendWebRTCOffer();
+      console.log(this.typeOfCall);
     }
 
     const getType = this.typeOfCall.split("_");
@@ -276,8 +330,12 @@ export class AppStore {
     const { callerId, typeOfCall } = data;
     this.callerDetails.callerId = callerId;
     this.callerDetails.typeOfCall = typeOfCall;
+    this.typeOfCall = typeOfCall;
     this.isCallerDialogOpen = true;
     this.callDirection = constants.INCOMING_CALL;
+    if (data.typeOfCall === constants.PERSONAL_VIDEO) {
+      this.addPeers();
+    }
   }
 
   @action
