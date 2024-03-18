@@ -12,6 +12,7 @@ const io = require("socket.io")(server, {
 const port = process.env.PORT || 3000;
 
 let connectedPeers = [];
+let connectedStarngerPeers = [];
 
 app.use(cors());
 app.use(express.static("public"));
@@ -84,12 +85,57 @@ io.on("connect", (socket) => {
     console.log("sudden-disconnect", data)
   );
 
+  socket.on("stranger-connection-accept", (data) => {
+    const { peerId, status } = data;
+    if (status) {
+      connectedStarngerPeers.push(peerId);
+    } else {
+      const allConnectedStarngerPeers = connectedStarngerPeers.filter(
+        (peer) => peer !== peerId
+      );
+      connectedStarngerPeers = allConnectedStarngerPeers;
+    }
+
+    console.log("Stranger Peers: ", connectedStarngerPeers);
+  });
+
+  socket.on("get-stranger-id", (data) => {
+    const { peerId, typeOfCall } = data;
+    const existedPeer = connectedStarngerPeers.find((peer) => peer === peerId);
+    const expectItsOwn = connectedStarngerPeers.filter(
+      (peer) => peer !== peerId
+    );
+
+    if (existedPeer) {
+      let randomPeer;
+      if (expectItsOwn.length > 0) {
+        randomPeer =
+          expectItsOwn[Math.floor(Math.random() * expectItsOwn.length)];
+      } else {
+        randomPeer = null;
+      }
+      console.log("Stranger ID: ", { strangerId: randomPeer });
+      io.to(socket.id).emit("get-stranger-id", { strangerId: randomPeer, typeOfCall });
+    }
+  });
+
   socket.on("disconnect", () => {
     const newConnectedPeers = connectedPeers.filter(
       (peerId) => peerId !== socket.id
     );
     connectedPeers = newConnectedPeers;
-    console.log("Peers disconnected: ", connectedPeers);
+
+    const newConnectedStrangerPeers = connectedStarngerPeers.filter(
+      (peer) => peer !== socket.id
+    );
+    connectedStarngerPeers = newConnectedStrangerPeers;
+
+    console.log(
+      "Peers disconnected: ",
+      connectedPeers,
+      "Stranger Peers disconnected: ",
+      connectedStarngerPeers
+    );
   });
 });
 

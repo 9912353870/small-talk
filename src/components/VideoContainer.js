@@ -5,7 +5,8 @@ import { constants } from "../utils/constants";
 function VideoContainer({ appStore }) {
   const show =
     appStore.getCallInfo.status === constants.ACCEPT &&
-    appStore.getStoreData.typeOfCall === constants.PERSONAL_VIDEO;
+    appStore.getStoreData.typeOfCall === constants.PERSONAL_VIDEO ||
+    appStore.getStoreData.typeOfCall === constants.STRANGER_VIDEO;
   const videoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 

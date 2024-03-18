@@ -76,6 +76,7 @@ export class AppStore {
     this.handleWebRTCAnswer = this.handleWebRTCAnswer.bind(this);
     this.handleWebRTCIceCandidates = this.handleWebRTCIceCandidates.bind(this);
     this.handleHangUp = this.handleHangUp.bind(this);
+    this.handleGetStrangerId = this.handleGetStrangerId.bind(this);
   }
 
   @computed get getPeerConnection() {
@@ -218,16 +219,16 @@ export class AppStore {
     const localStream = this.localStream;
     const senders = this.peerConnection.getSenders();
     const exSender = senders.find(
-      (item) => item.track.kind === localStream.getVideoTracks()[0].kind
+      (item) => item?.track?.kind === localStream?.getVideoTracks()[0]?.kind
     );
 
-    if(exSender){
+    if (exSender) {
       this.peerConnection.removeTrack(exSender);
     }
 
-    localStream
-      .getTracks()
-      .forEach((track) => {this.peerConnection.addTrack(track, localStream)});
+    localStream.getTracks().forEach((track) => {
+      this.peerConnection.addTrack(track, localStream);
+    });
   }
 
   @action
@@ -278,6 +279,7 @@ export class AppStore {
         socket.on("webRTC-signalling", this.handleWebRTCSignalling);
         socket.on("hang-up-the-call", this.handleHangUp);
         socket.on("disconnect", this.handleSuddenDisconnection);
+        socket.on("get-stranger-id", this.handleGetStrangerId);
       }).bind(this)
     );
   }
@@ -304,7 +306,17 @@ export class AppStore {
 
   @action
   getCalleDetails(typeOfCall) {
+    if (
+      this.allowConnectionsFromStranger &&
+      (typeOfCall === constants.STRANGER_VIDEO ||
+        typeOfCall === constants.STRANGER_CHAT)
+    ) {
+      this.getStrangerId(typeOfCall);
+      return;
+    }
+
     if (!(this.calleSocketId && typeOfCall)) return;
+
     const data = { calleId: this.calleSocketId, typeOfCall };
     this.typeOfCall = typeOfCall;
     this.callDirection = constants.OUTGOING_CALL;
@@ -318,7 +330,10 @@ export class AppStore {
       return false;
     }
     socket.emit("pre-offer", data);
-    if (data.typeOfCall === constants.PERSONAL_VIDEO) {
+    if (
+      data.typeOfCall === constants.PERSONAL_VIDEO ||
+      data.typeOfCall === constants.STRANGER_VIDEO
+    ) {
       this.addPeers();
     }
     this.isCallerDialogOpen = true;
@@ -365,6 +380,7 @@ export class AppStore {
 
   @action
   handlePreOfferDetailsFromServer(data) {
+    console.log("handle pre-offer details: ", data);
     const { callerId, typeOfCall } = data;
 
     if (this.isCallAvailable === constants.CALL_UNAVAILABLE) {
@@ -379,7 +395,10 @@ export class AppStore {
     this.typeOfCall = typeOfCall;
     this.isCallerDialogOpen = true;
     this.callDirection = constants.INCOMING_CALL;
-    if (data.typeOfCall === constants.PERSONAL_VIDEO) {
+    if (
+      data.typeOfCall === constants.PERSONAL_VIDEO ||
+      data.typeOfCall === constants.STRANGER_VIDEO
+    ) {
       this.addPeers();
     }
   }
@@ -471,9 +490,36 @@ export class AppStore {
     this.screenSharingStream = stream;
   }
 
-  /**
-   * @param {boolean} status
-   */
+  @action handleGetStrangerId(data) {
+    const { strangerId, typeOfCall } = data;
+    if(!strangerId) return null;
+    const offer = { calleId: strangerId, typeOfCall };
+    this.typeOfCall = typeOfCall;
+    this.callDirection = constants.OUTGOING_CALL;
+    this.calleSocketId = strangerId;
+
+    this.sendPreOfferDetailsToServer(offer);
+  }
+
+  @action getStrangerId(typeOfCall) {
+    if (this.socketId && this.allowConnectionsFromStranger) {
+      socket.emit("get-stranger-id", {
+        peerId: this.socketId,
+        typeOfCall: typeOfCall,
+      });
+    }
+  }
+
+  @action connectToStranger(status) {
+    if (this.socketId) {
+      socket.emit("stranger-connection-accept", {
+        peerId: this.socketId,
+        status,
+      });
+      this.setAllowConnectionsFromStranger(status);
+    }
+  }
+
   @action
   setAllowConnectionsFromStranger(status) {
     this.allowConnectionsFromStranger = status;
@@ -562,7 +608,10 @@ export class AppStore {
   @action finishTheCall() {
     const localStream = this.localStream;
 
-    if (this.typeOfCall === constants.PERSONAL_VIDEO) {
+    if (
+      this.typeOfCall === constants.PERSONAL_VIDEO ||
+      this.typeOfCall === constants.STRANGER_VIDEO
+    ) {
       localStream.getAudioTracks()[0].enabled = true;
       localStream.getVideoTracks()[0].enabled = true;
     }
@@ -586,7 +635,7 @@ export class AppStore {
       isPersonal: "",
     };
     this.messageStack = [];
-    this.isCallAvailable = constants.CALL_AVAILABLE
+    this.isCallAvailable = constants.CALL_AVAILABLE;
   }
 }
 

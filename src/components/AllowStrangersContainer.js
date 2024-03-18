@@ -1,14 +1,24 @@
+import { observer } from "mobx-react";
 import React from "react";
 
-export default function AllowStrangersContainer() {
+function AllowStrangersContainer({ appStore }) {
   return (
     <div className="checkbox_container">
-      <div className="checkbox_connection" id="allow_strangers_checkbox">
-        <img
-          id="allow_strangers_checkbox_image"
-          className=""
-          src={require("../../assets/images/check.png").default}
-        ></img>
+      <div
+        className="checkbox_connection"
+        onClick={() => {
+          appStore.connectToStranger(
+            !appStore.getStoreData.allowConnectionsFromStranger
+          );
+        }}
+      >
+        {appStore.getStoreData.allowConnectionsFromStranger && (
+          <img
+            id="allow_strangers_checkbox_image"
+            className=""
+            src={require("../../assets/images/check.png").default}
+          ></img>
+        )}
       </div>
       <p className="checkbox_container_paragraph">
         Allow connection from strangers
@@ -16,3 +26,5 @@ export default function AllowStrangersContainer() {
     </div>
   );
 }
+
+export default observer(AllowStrangersContainer);
