@@ -65,7 +65,7 @@ io.on("connect", (socket) => {
     );
 
     if (peerIdFromConnectedPeers) {
-      io.to(peerIdFromConnectedPeers).emit("webRTC-signalling",data);
+      io.to(peerIdFromConnectedPeers).emit("webRTC-signalling", data);
     }
   });
 
@@ -78,8 +78,11 @@ io.on("connect", (socket) => {
     if (peerIdFromConnectedPeers) {
       io.to(peerIdFromConnectedPeers).emit("hang-up-the-call");
     }
+  });
 
-  })
+  socket.on("sudden-disconnect", (data) =>
+    console.log("sudden-disconnect", data)
+  );
 
   socket.on("disconnect", () => {
     const newConnectedPeers = connectedPeers.filter(

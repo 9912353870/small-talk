@@ -29,7 +29,7 @@ export class AppStore {
     isPersonal: "",
   };
 
-  @observable accessor enableMic = false;
+  @observable accessor enableMic = true;
   @observable accessor enableVideo = true;
   @observable accessor enableScreenSharing = false;
 
@@ -55,6 +55,7 @@ export class AppStore {
   @observable accessor vp9Codec = "video/webm; codecs=vp=9";
   @observable accessor vp9Options = { mimeType: this.vp9Codec };
   @observable accessor recordedChunks = [];
+  @observable accessor isCallAvailable = constants.CALL_AVAILABLE;
 
   constructor() {
     makeObservable(this);
@@ -215,9 +216,18 @@ export class AppStore {
 
   @action addPeers() {
     const localStream = this.localStream;
+    const senders = this.peerConnection.getSenders();
+    const exSender = senders.find(
+      (item) => item.track.kind === localStream.getVideoTracks()[0].kind
+    );
+
+    if(exSender){
+      this.peerConnection.removeTrack(exSender);
+    }
+
     localStream
       .getTracks()
-      .forEach((track) => this.peerConnection.addTrack(track, localStream));
+      .forEach((track) => {this.peerConnection.addTrack(track, localStream)});
   }
 
   @action
@@ -228,14 +238,10 @@ export class AppStore {
       status: constants.ACCEPT,
     });
 
-    console.log(
-      "this.peerConnection.signalingState: ",
-      this.peerConnection.signalingState
-    );
-
     this.createRTCPeerConnection();
 
     this.isCallerDialogOpen = false;
+    this.isCallAvailable = constants.CALL_UNAVAILABLE;
 
     const getType = this.callerDetails.typeOfCall.split("_");
     this.callInfo = {
@@ -271,8 +277,16 @@ export class AppStore {
         socket.on("pre-offer-answer", this.handlePreOfferAnswerFromServer);
         socket.on("webRTC-signalling", this.handleWebRTCSignalling);
         socket.on("hang-up-the-call", this.handleHangUp);
+        socket.on("disconnect", this.handleSuddenDisconnection);
       }).bind(this)
     );
+  }
+
+  @action
+  handleSuddenDisconnection() {
+    socket.emit("sudden-disconnect", {
+      peerId: this.calleSocketId || this.callerDetails.callerId,
+    });
   }
 
   @action
@@ -300,6 +314,9 @@ export class AppStore {
 
   @action
   sendPreOfferDetailsToServer(data) {
+    if (this.isCallAvailable === constants.CALL_UNAVAILABLE) {
+      return false;
+    }
     socket.emit("pre-offer", data);
     if (data.typeOfCall === constants.PERSONAL_VIDEO) {
       this.addPeers();
@@ -310,14 +327,23 @@ export class AppStore {
   @action
   handlePreOfferAnswerFromServer(data) {
     console.log("pre-offer-answer: Your call got attended..!", data);
-    const { status } = data;
+    const { status, calleId } = data;
+
+    if (this.isCallAvailable === constants.CALL_UNAVAILABLE) {
+      socket.emit("pre-offer-answer", {
+        callerId: calleId,
+        status: constants.UNAVAILABLE,
+      });
+      return;
+    }
+
     this.callStatus.status = status;
     this.callStatus.enableCallStatusInfo = true;
 
     if (status === constants.ACCEPT) {
       this.createRTCPeerConnection();
       this.sendWebRTCOffer();
-      console.log(this.typeOfCall);
+      this.isCallAvailable = constants.CALL_UNAVAILABLE;
     }
 
     const getType = this.typeOfCall.split("_");
@@ -340,6 +366,14 @@ export class AppStore {
   @action
   handlePreOfferDetailsFromServer(data) {
     const { callerId, typeOfCall } = data;
+
+    if (this.isCallAvailable === constants.CALL_UNAVAILABLE) {
+      socket.emit("pre-offer-answer", {
+        callerId: callerId,
+        status: constants.UNAVAILABLE,
+      });
+      return;
+    }
     this.callerDetails.callerId = callerId;
     this.callerDetails.typeOfCall = typeOfCall;
     this.typeOfCall = typeOfCall;
@@ -458,7 +492,7 @@ export class AppStore {
    */
   @action reinitiatePeerConnection() {
     this.peerConnection = new RTCPeerConnection(this.webRTCconfigurations);
-    this.dataChannel = this.peerConnection.createDataChannel("chat")
+    this.dataChannel = this.peerConnection.createDataChannel("chat");
   }
 
   @action createRTCPeerConnection() {
@@ -552,8 +586,10 @@ export class AppStore {
       isPersonal: "",
     };
     this.messageStack = [];
+    this.isCallAvailable = constants.CALL_AVAILABLE
   }
 }
 
 const accessAppStore = new AppStore();
+
 export default accessAppStore;
