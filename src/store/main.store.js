@@ -74,6 +74,11 @@ export class AppStore {
     this.handleWebRTCOffer = this.handleWebRTCOffer.bind(this);
     this.handleWebRTCAnswer = this.handleWebRTCAnswer.bind(this);
     this.handleWebRTCIceCandidates = this.handleWebRTCIceCandidates.bind(this);
+    this.handleHangUp = this.handleHangUp.bind(this);
+  }
+
+  @computed get getPeerConnection() {
+    return this.peerConnection;
   }
 
   @computed
@@ -223,6 +228,11 @@ export class AppStore {
       status: constants.ACCEPT,
     });
 
+    console.log(
+      "this.peerConnection.signalingState: ",
+      this.peerConnection.signalingState
+    );
+
     this.createRTCPeerConnection();
 
     this.isCallerDialogOpen = false;
@@ -260,6 +270,7 @@ export class AppStore {
         socket.on("pre-offer", this.handlePreOfferDetailsFromServer);
         socket.on("pre-offer-answer", this.handlePreOfferAnswerFromServer);
         socket.on("webRTC-signalling", this.handleWebRTCSignalling);
+        socket.on("hang-up-the-call", this.handleHangUp);
       }).bind(this)
     );
   }
@@ -279,15 +290,16 @@ export class AppStore {
 
   @action
   getCalleDetails(typeOfCall) {
+    if (!(this.calleSocketId && typeOfCall)) return;
     const data = { calleId: this.calleSocketId, typeOfCall };
     this.typeOfCall = typeOfCall;
     this.callDirection = constants.OUTGOING_CALL;
+
     this.sendPreOfferDetailsToServer(data);
   }
 
   @action
   sendPreOfferDetailsToServer(data) {
-    console.log("pre-offer", data);
     socket.emit("pre-offer", data);
     if (data.typeOfCall === constants.PERSONAL_VIDEO) {
       this.addPeers();
@@ -444,6 +456,10 @@ export class AppStore {
   /**
    * RTCPeerConnection
    */
+  @action reinitiatePeerConnection() {
+    this.peerConnection = new RTCPeerConnection(this.webRTCconfigurations);
+    this.dataChannel = this.peerConnection.createDataChannel("chat")
+  }
 
   @action createRTCPeerConnection() {
     this.peerConnection.ondatachannel = function (event) {
@@ -494,8 +510,48 @@ export class AppStore {
       console.log("Tracks are getting added:", event);
       remoteStream.addTrack(event.track);
     };
+  }
 
-    //end
+  @action hangUpTheCall() {
+    socket.emit("hang-up-the-call", {
+      peerId: this.calleSocketId || this.callerDetails.callerId,
+    });
+    this.finishTheCall();
+    this.clearTheStore();
+  }
+
+  @action handleHangUp() {
+    this.finishTheCall();
+    this.clearTheStore();
+  }
+
+  @action finishTheCall() {
+    const localStream = this.localStream;
+
+    if (this.typeOfCall === constants.PERSONAL_VIDEO) {
+      localStream.getAudioTracks()[0].enabled = true;
+      localStream.getVideoTracks()[0].enabled = true;
+    }
+
+    this.peerConnection.close();
+
+    if (this.peerConnection.signalingState === "closed") {
+      console.log("Re Initiated: ---- Peer Connection");
+      this.reinitiatePeerConnection();
+    }
+  }
+
+  @action clearTheStore() {
+    this.callerDetails.callerId = "";
+    this.callerDetails.typeOfCall = null;
+    this.typeOfCall = null;
+    this.calleSocketId = "";
+    this.callInfo = {
+      status: "",
+      type: "",
+      isPersonal: "",
+    };
+    this.messageStack = [];
   }
 }
 

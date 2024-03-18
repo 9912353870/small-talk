@@ -69,6 +69,18 @@ io.on("connect", (socket) => {
     }
   });
 
+  socket.on("hang-up-the-call", (data) => {
+    const { peerId } = data;
+    const peerIdFromConnectedPeers = connectedPeers.find(
+      (peer) => peer === peerId
+    );
+
+    if (peerIdFromConnectedPeers) {
+      io.to(peerIdFromConnectedPeers).emit("hang-up-the-call");
+    }
+
+  })
+
   socket.on("disconnect", () => {
     const newConnectedPeers = connectedPeers.filter(
       (peerId) => peerId !== socket.id

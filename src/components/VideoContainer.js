@@ -32,6 +32,10 @@ function VideoContainer({ appStore }) {
     appStore.resumeRecording();
   };
 
+  const handleHangUp = () => {
+    appStore.hangUpTheCall();
+  };
+
   useEffect(() => {
     appStore.handleLocalStream();
   }, []);
@@ -113,7 +117,10 @@ function VideoContainer({ appStore }) {
                 />
               )}
             </button>
-            <button className="call_button_large" id="hang_up_button">
+            <button
+              className="call_button_large"
+              onClick={() => handleHangUp()}
+            >
               <img src={require("../../assets/Images/hangUp.png").default} />
             </button>
             <button
@@ -140,16 +147,17 @@ function VideoContainer({ appStore }) {
         </>
       )}
 
-      {appStore.getCallInfo.status === constants.ACCEPT && (
-        <div
-          className={`finish_chat_button_container`}
-          id="finish_chat_button_container"
-        >
-          <button className="call_button_large" id="finish_chat_call_button">
-            <img src={require("../../assets/Images/hangUp.png").default} />
-          </button>
-        </div>
-      )}
+      {appStore.getCallInfo.status === constants.ACCEPT &&
+        appStore.getStoreData.typeOfCall === constants.PERSONAL_CHAT && (
+          <div
+            className={`finish_chat_button_container`}
+            onClick={() => handleHangUp()}
+          >
+            <button className="call_button_large" id="finish_chat_call_button">
+              <img src={require("../../assets/Images/hangUp.png").default} />
+            </button>
+          </div>
+        )}
       {startRecord && (
         <div
           className="video_recording_buttons_container"
@@ -171,7 +179,12 @@ function VideoContainer({ appStore }) {
               <img src={require("../../assets/Images/resume.png").default} />
             </button>
           )}
-          <button id="stop_recording_button" onClick={() => handleStartAndStopRecording(false)}>Stop recording</button>
+          <button
+            id="stop_recording_button"
+            onClick={() => handleStartAndStopRecording(false)}
+          >
+            Stop recording
+          </button>
         </div>
       )}
     </div>
